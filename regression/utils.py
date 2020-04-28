@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import logging
 
@@ -5,6 +6,24 @@ import functools
 
 from itertools import *
 from datetime import datetime
+
+import warnings  
+with warnings.catch_warnings():  
+    warnings.filterwarnings("ignore",category=FutureWarning)
+
+    import tensorflow as tf
+
+    from keras.models import *
+    from keras.layers import *
+    from keras.initializers import *
+    from keras.optimizers import *
+    from keras.regularizers import *
+    from keras.objectives import *
+    from keras.callbacks import * 
+    from keras.losses import * 
+
+    from keras import backend as K
+    from keras.utils import generic_utils
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +69,43 @@ def drop_userid(dataset):
 
 def split_XY(dataset, num_features=3, X_records=3, Y_records=1):
     assert dataset.shape[1] == num_features * (X_records + Y_records)
-    X = dataset[:, :num_features * X_records]
-    Y = dataset[:, num_features * X_records:]
+    X = dataset[:, :X_records * num_features].reshape(-1, X_records, num_features)
+    Y = dataset[:, X_records * num_features:]
     return X, Y
+
+class TrainValTensorBoard(TensorBoard):
+    def __init__(self, log_dir='./logs', **kwargs):
+        # Make the original `TensorBoard` log to a subdirectory 'training'
+        training_log_dir = os.path.join(log_dir, 'training')
+        super(TrainValTensorBoard, self).__init__(training_log_dir, **kwargs)
+
+        # Log the validation metrics to a separate subdirectory
+        self.val_log_dir = os.path.join(log_dir, 'validation')
+
+    def set_model(self, model):
+        # Setup writer for validation metrics
+        self.val_writer = tf.summary.create_file_writer(self.val_log_dir)
+        super(TrainValTensorBoard, self).set_model(model)
+
+    def on_epoch_end(self, epoch, logs=None):
+        # Pop the validation logs and handle them separately with
+        # `self.val_writer`. Also rename the keys so that they can
+        # be plotted on the same figure with the training metrics
+        logs = logs or {}
+        val_logs = {k.replace('val_', ''): v for k, v in logs.items() if k.startswith('val_')}
+        for name, value in val_logs.items():
+            tf.summary.scalar(name, value, epoch)
+            # summary = tf.Summary()
+            # summary_value = summary.value.add()
+            # summary_value.simple_value = value.item()
+            # summary_value.tag = name
+            # self.val_writer.add_summary(summary, epoch)
+        self.val_writer.flush()
+
+        # Pass the remaining logs to `TensorBoard.on_epoch_end`
+        logs = {k: v for k, v in logs.items() if not k.startswith('val_')}
+        super(TrainValTensorBoard, self).on_epoch_end(epoch, logs)
+
+    def on_train_end(self, logs=None):
+        super(TrainValTensorBoard, self).on_train_end(logs)
+        self.val_writer.close()

@@ -137,3 +137,9 @@ social-checkin-prediction/
 .DS_Store
 
 logs/*
+logs_old/*
+*.h5
+*.pickle
+*.log
+*.out
+*.err
