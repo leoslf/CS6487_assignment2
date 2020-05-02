@@ -21,20 +21,24 @@ dataset_dir = "social-checkin-prediction"
 filenames = list(map(lambda basename: os.path.join(dataset_dir, "%s.csv" % basename), basenames))
 
 models = [
-    # "BaselineModel",
-    # "ModifiedBaselineModel",
+    "BaselineModel",
+    "ModifiedBaselineModel",
     "RegularizedModel_EarlyStopping",
     "RegularizedModel_L2",
     "RegularizedModel_L1",
     "RegularizedModel_Dropout",
-    # "RegularizedModel_Ensembling",
-    # "RegularizedModel_DataAugmentation",
+    "RegularizedModel_Ensembling",
+    "RegularizedModel_DataAugmentation",
+    "BatchNorm",
+    "ResNet",
+    "DenseNet",
 ]
 
 def get_model(name, *argv, **kwargs):
     return globals()[name](*argv, **kwargs)
 
 if __name__ == "__main__":
+    sys.setrecursionlimit(15000)
     np.set_printoptions(suppress=True)
     
     dataset_loader = compose(split_XY, drop_userid, load_csv)
@@ -45,10 +49,18 @@ if __name__ == "__main__":
     logger.debug("validation_X: %r, validation_Y: %r", validation_X.shape, validation_Y.shape)
     logger.debug("test_X: %r, test_Y: %r", test_X.shape, test_Y.shape)
 
-    for model in map(get_model, models):
-        history = model.fit(train_X, train_Y, validation_X, validation_Y)
-        logger.info("model \"%s\": testing accuracy: %f", model.name, model.evaluate(test_X, test_Y))
+    losses = {}
 
-        with open("%s_history_%s.pickle" % (model.name, datetime.now().strftime("%Y%m%d-%H%M%S")), "wb") as f:
-            pickle.dump(history, f)
+    for model in map(get_model, models):
+        # history = model.fit(train_X, train_Y, validation_X, validation_Y)
+        # with open("%s_history_%s.pickle" % (model.name, datetime.now().strftime("%Y%m%d-%H%M%S")), "wb") as f:
+        #     pickle.dump(history, f)
+
+        test_loss = model.evaluate(test_X, test_Y)
+        logger.info("model \"%s\": testing loss: %f", model.name, test_loss)
+        losses[model.name] = test_loss
+
+
+    with open("losses.pickle", "wb") as f:
+        pickle.dump(losses, f)
 

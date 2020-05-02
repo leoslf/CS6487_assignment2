@@ -21,17 +21,17 @@ class BaselineModel(BaseModel):
         inputs = Input(shape = self.input_shape)
         conv_1 = Conv1D(64, 2, input_shape=self.input_shape, activation="relu", kernel_regularizer=self.kernel_regularizer)(inputs)
         if self.apply_batchnorm:
-            conv_1 = BatchNorm()(conv_1)
+            conv_1 = BatchNormalization()(conv_1)
         conv_1 = Activation("relu")(conv_1)
 
         conv_2 = Conv1D(32, 2, kernel_regularizer=self.kernel_regularizer)(conv_1)
         if self.apply_batchnorm:
-            conv_2 = BatchNorm()(conv_2)
+            conv_2 = BatchNormalization()(conv_2)
         conv_2 = Activation("relu")(conv_2)
 
         conv_3 = Conv1D(32, 1, kernel_regularizer=self.kernel_regularizer)(conv_2)
         if self.apply_batchnorm:
-            conv_3 = BatchNorm()(conv_3)
+            conv_3 = BatchNormalization()(conv_3)
         conv_3 = Activation("relu")(conv_3)
 
         flatten = Flatten()(conv_3)

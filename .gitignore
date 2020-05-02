@@ -143,3 +143,4 @@ logs_old/*
 *.log
 *.out
 *.err
+*.bak

@@ -87,10 +87,12 @@ class BaseModel:
 
     @property
     def earlystopping(self):
+       # return CustomEarlyStopping(monitor="val_loss", # use validation accuracy for stopping
        return EarlyStopping(monitor="val_loss", # use validation accuracy for stopping
                             min_delta = 0.0001,
-                            patience = 50, 
+                            patience = 20, 
                             verbose = self.verbose,
+                            # target = 
                             mode="auto")
 
     @property
